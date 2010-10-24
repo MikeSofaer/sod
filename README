@@ -1,0 +1,6 @@
+Sod bootstraps a centos machine using a github repo that uses bundler.
+
+You need two cookbooks, bootstrap and main.  Bootstrap should contain only what needs to happen before bundle install.
+After bundle install the main cookbook will be run with bundle exec.  This one should set up everything else.
+
+Both cookbooks need a default recipe

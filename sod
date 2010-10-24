@@ -3,42 +3,54 @@
 require 'rubygems'
 require 'net/scp'
 class Sod
-  def self.bootstrap(ip_address)
-    puts "need password"
-    password = $stdin.gets
-    Net::SSH.start(ip_address, "root", :password => password.strip) do |connection|
-      scp = Net::SCP.new connection
-      scp.upload! File.join(File.dirname(__FILE__), "rvm_install.sh"), "/root/"
-      puts connection.exec! 'rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm'
-      puts "Installing git and c"
-      puts connection.exec! "yum -y install git gcc automake autoconf libtool make"
-      rvm(connection)
-      repo_destination = '/usr/local/app/'
-      puts connection.exec! "mkdir -p #{repo_destination}"
-      repo_name = "diaspora"
-      clone_repo!(connection, "git://github.com/diaspora/#{repo_name}.git", "#{repo_destination}")
-      puts connection.exec! "mkdir -p /etc/chef && echo 'cookbook_path \"#{repo_destination + repo_name}/chef/cookbooks\"' > /etc/chef/solo.rb"
-      puts rvm_command! connection, "chef-solo -j #{repo_destination + repo_name}/chef/cookbooks/bootstrap/bootstrap.json"
-      puts rvm_command! connection, "cd #{repo_destination}diaspora && bundle install"
+  def self.provision(ip_address, repo_user, repo_name, password=nil)
+    unless password
+      puts "need password"
+      password = $stdin.gets
     end
+    Net::SSH.start(ip_address, "root", :password => password.strip) { |connection| bootstrap(connection, repo_user, repo_name) }
   end
-  def self.rvm(connection)
-      puts "installing rvm"
-      puts connection.exec! "bash /root/rvm_install.sh"
-      puts connection.exec! "rvm package install zlib"
-      puts connection.exec! "rvm package install openssl"
-      puts connection.exec! "rvm package install readline"
-      puts connection.exec! "rvm install 1.8.7 -C --with-zlib-dir=/usr/local/rvm/usr --with-readline-dir=/usr/local/rvm/usr --with-openssl-dir=/usr/local/rvm/usr"
-      puts 'setting /etc/bashrc'
-      puts connection.exec! %{grep -q rvm /etc/bashrc || echo '[[ -s "/usr/local/lib/rvm" ]] && . "/usr/local/lib/rvm"' >> /etc/bashrc}
+
+  def self.bootstrap(connection, repo_user, repo_name)
+    install_rvm(connection)
+    clone_repo!(connection, repo_user, repo_name)
+    chef_bootstrap!(connection, repo_name)
+    app_bundle(connection, repo_name)
+    app_chef(connection, repo_name)
+  end
+
+  def self.chef_bootstrap!(connection, repo_name)
+    puts connection.exec! "mkdir -p /etc/chef && echo 'cookbook_path \"usr/local/app/#{repo_name}/chef/cookbooks\"' > /etc/chef/solo.rb"
+    puts rvm_command! connection, "chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/bootstrap/bootstrap.json"
+  end
+
+  def self.app_bundle(connection, repo_name)
+    puts rvm_command! connection, "cd /usr/local/app/#{repo_name} && bundle install"
+  end
+
+  def self.app_chef(connection, repo_name)
+    puts rvm_command! connection, "cd /usr/local/app/#{repo_name} && bundle exec chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/main/main.json"
+  end
+
+  def self.install_rvm(connection)
+    puts "installing rvm"
+    scp = Net::SCP.new connection
+    scp.upload! File.join(File.dirname(__FILE__), "rvm_install.sh"), "/root/"
+    puts connection.exec! "bash /root/rvm_install.sh"
+    puts connection.exec! "rvm package install zlib"
+    puts connection.exec! "rvm package install openssl"
+    puts connection.exec! "rvm package install readline"
+    puts connection.exec! "rvm install 1.8.7 -C --with-zlib-dir=/usr/local/rvm/usr --with-readline-dir=/usr/local/rvm/usr --with-openssl-dir=/usr/local/rvm/usr"
+    puts 'setting /etc/bashrc'
+    puts connection.exec! %{grep -q rvm /etc/bashrc || echo '[[ -s "/usr/local/lib/rvm" ]] && . "/usr/local/lib/rvm"' >> /etc/bashrc}
   end
   def self.install_chef(connection)
-      puts "installing bundler"
-      puts rvm_command! connection, "gem install bundler"
-      puts connection.exec! "mkdir -p /chef"
-      puts "uploading Gemfile for chef"
-      scp.upload File.join(File.dirname(__FILE__), "chef_Gemfile"), "/chef/Gemfile"
-      puts rvm_command! connection, "cd /chef && bundle install"
+    puts "installing bundler"
+    puts rvm_command! connection, "gem install bundler"
+    puts connection.exec! "mkdir -p /chef"
+    puts "uploading Gemfile for chef"
+    scp.upload File.join(File.dirname(__FILE__), "chef_Gemfile"), "/chef/Gemfile"
+    puts rvm_command! connection, "cd /chef && bundle install"
   end
   def self.rvm_command!(connection, string)
     command = "sh -cl 'bash /usr/local/lib/rvm && rvm use 1.8.7 && #{string}'"
@@ -46,11 +58,19 @@ class Sod
     connection.exec! command
   end
 
-  def self.clone_repo!(connection, repo_location, destination)
-    puts connection.exec! "rm -rf /usr/local/app/diaspora"
-    puts connection.exec! "cd #{destination} && git clone #{repo_location}"
+  def self.install_build_essentail(connection)
+    puts "Installing git and c"
+    puts connection.exec! 'rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm'
+    puts connection.exec! "yum -y install git gcc automake autoconf libtool make"
+  end
+
+  def self.clone_repo!(connection, repo_user, repo_name)
+    root_repo_path = '/usr/local/app/'
+    puts connection.exec! "mkdir -p #{root_repo_path}"
+    puts connection.exec! "cd #{root_repo_path} && git clone git://github.com/#{repo_user}/#{repo_name}.git || true"
+    puts connection.exec! "cd #{root_repo_path}/#{repo_name} && git pull origin master"
   end
 end
 
-puts "need an ip address" unless ARGV
-Sod.bootstrap(ARGV[0])
+puts "need an ip address, github user, and repo name" unless ARGV[2]
+Sod.provision ARGV[0], ARGV[1], ARGV[2], ARGV[2]
