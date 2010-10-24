@@ -21,7 +21,7 @@ class Sod
 
   def self.chef_bootstrap!(connection, repo_name)
     puts connection.exec! "mkdir -p /etc/chef && echo 'cookbook_path \"usr/local/app/#{repo_name}/chef/cookbooks\"' > /etc/chef/solo.rb"
-    puts rvm_command! connection, "chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/bootstrap/bootstrap.json"
+    puts rvm_command! connection, "chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/centos/bootstrap.json"
   end
 
   def self.app_bundle(connection, repo_name)
@@ -29,7 +29,7 @@ class Sod
   end
 
   def self.app_chef(connection, repo_name)
-    puts rvm_command! connection, "cd /usr/local/app/#{repo_name} && bundle exec chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/main/main.json"
+    puts rvm_command! connection, "cd /usr/local/app/#{repo_name} && bundle exec chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/centos/main.json"
   end
 
   def self.install_rvm(connection)
