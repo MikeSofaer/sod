@@ -12,7 +12,8 @@ class Sod
   end
 
   def self.bootstrap(connection, repo_user, repo_name)
-    install_rvm(connection)
+    install_build_essential! connection
+    install_rvm!(connection)
     clone_repo!(connection, repo_user, repo_name)
     chef_bootstrap!(connection, repo_name)
     app_bundle(connection, repo_name)
@@ -32,7 +33,7 @@ class Sod
     puts rvm_command! connection, "cd /usr/local/app/#{repo_name} && bundle exec chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/centos/main.json"
   end
 
-  def self.install_rvm(connection)
+  def self.install_rvm!(connection)
     puts "installing rvm"
     scp = Net::SCP.new connection
     scp.upload! File.join(File.dirname(__FILE__), "rvm_install.sh"), "/root/"
@@ -58,7 +59,7 @@ class Sod
     connection.exec! command
   end
 
-  def self.install_build_essentail(connection)
+  def self.install_build_essential!(connection)
     puts "Installing git and c"
     puts connection.exec! 'rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm'
     puts connection.exec! "yum -y install git gcc automake autoconf libtool make"
@@ -73,4 +74,4 @@ class Sod
 end
 
 puts "need an ip address, github user, and repo name" unless ARGV[2]
-Sod.provision ARGV[0], ARGV[1], ARGV[2], ARGV[2]
+Sod.provision ARGV[0], ARGV[1], ARGV[2], ARGV[3]
