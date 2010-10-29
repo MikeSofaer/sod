@@ -12,25 +12,24 @@ class Sod
   end
 
   def self.bootstrap(connection, repo_user, repo_name)
-    install_build_essential! connection
-    install_rvm!(connection)
-    clone_repo!(connection, repo_user, repo_name)
-    chef_bootstrap!(connection, repo_name)
-    app_bundle(connection, repo_name)
-    app_chef(connection, repo_name)
+    #install_build_essential! connection
+    #install_rvm!(connection)
+    #clone_repo!(connection, repo_user, repo_name)
+    #chef_bootstrap!(connection, repo_name)
+    app_bootstrap(connection, repo_name)
   end
 
   def self.chef_bootstrap!(connection, repo_name)
     puts connection.exec! "mkdir -p /etc/chef && echo 'cookbook_path \"usr/local/app/#{repo_name}/chef/cookbooks\"' > /etc/chef/solo.rb"
-    puts rvm_command! connection, "chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/centos/bootstrap.json"
+    install_chef(connection)
+    puts bootstrap_ruby_gem_command! connection, "chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/centos/bootstrap.json"
   end
 
-  def self.app_bundle(connection, repo_name)
-    puts rvm_command! connection, "cd /usr/local/app/#{repo_name} && bundle install"
-  end
-
-  def self.app_chef(connection, repo_name)
-    puts rvm_command! connection, "cd /usr/local/app/#{repo_name} && bundle exec chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/centos/main.json"
+  def self.app_bootstrap(connection, repo_name)
+    #At this point we assume you have set up ruby in a way that works on the machine
+    #how you want it to work, and we can just use it.
+    puts connection.exec! "cd /usr/local/app/#{repo_name} && bundle install"
+    puts connection.exec! "cd /usr/local/app/#{repo_name} && chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/centos/main.json"
   end
 
   def self.install_rvm!(connection)
@@ -41,24 +40,42 @@ class Sod
     puts connection.exec! "rvm package install zlib"
     puts connection.exec! "rvm package install openssl"
     puts connection.exec! "rvm package install readline"
-    puts connection.exec! "rvm install 1.8.7 -C --with-zlib-dir=/usr/local/rvm/usr --with-readline-dir=/usr/local/rvm/usr --with-openssl-dir=/usr/local/rvm/usr"
+    puts connection.exec! "rvm install 1.8.7-p302 -C --with-zlib-dir=/usr/local/rvm/usr --with-readline-dir=/usr/local/rvm/usr --with-openssl-dir=/usr/local/rvm/usr"
     puts 'setting /etc/bashrc'
     puts connection.exec! %{grep -q rvm /etc/bashrc || echo '[[ -s "/usr/local/lib/rvm" ]] && . "/usr/local/lib/rvm"' >> /etc/bashrc}
   end
   def self.install_chef(connection)
     puts "installing bundler"
-    puts rvm_command! connection, "gem install bundler"
+    puts bootstrap_ruby_command! connection, "gem install bundler"
     puts connection.exec! "mkdir -p /chef"
     puts "uploading Gemfile for chef"
+    scp = Net::SCP.new connection
     scp.upload File.join(File.dirname(__FILE__), "chef_Gemfile"), "/chef/Gemfile"
-    puts rvm_command! connection, "cd /chef && bundle install"
+    puts bootstrap_ruby_gem_command! connection, "bundle install", :directory => "/chef"
   end
-  def self.rvm_command!(connection, string)
-    command = "sh -cl 'bash /usr/local/lib/rvm && rvm use 1.8.7 && #{string}'"
-    puts "Executing RVM command #{command}"
-    connection.exec! command
+  
+  def self.bootstrap_ruby_command!(connection, string, options = {})
+    command = "#{bootstrap_ruby_bin_path}/ruby #{bootstrap_ruby_bin_path}/#{string}"
+    command = "cd #{options[:directory]} && " + command if options[:directory]
+    puts "executing " + command
+    puts connection.exec! command
   end
 
+  def self.bootstrap_ruby_gem_command!(connection, string, options = {})
+    command = "#{bootstrap_ruby_bin_path}/ruby #{bootstrap_ruby_gem_path}/#{string}"
+    command = "cd #{options[:directory]} && " + command if options[:directory]
+    puts "executing " + command
+    puts connection.exec! command
+  end
+
+  def self.bootstrap_ruby_bin_path
+    "/usr/local/rvm/rubies/ruby-1.8.7-p302/bin"
+  end
+  
+  def self.bootstrap_ruby_gem_path
+    "/usr/local/rvm/gems/ruby-1.8.7-p302/bin"
+  end
+  
   def self.install_build_essential!(connection)
     puts "Installing git and c"
     puts connection.exec! 'rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm'
