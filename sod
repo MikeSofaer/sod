@@ -12,10 +12,10 @@ class Sod
   end
 
   def self.bootstrap(connection, repo_user, repo_name)
-    #install_build_essential! connection
-    #install_rvm!(connection)
-    #clone_repo!(connection, repo_user, repo_name)
-    #chef_bootstrap!(connection, repo_name)
+    install_build_essential! connection
+    install_rvm!(connection)
+    clone_repo!(connection, repo_user, repo_name)
+    chef_bootstrap!(connection, repo_name)
     app_bootstrap(connection, repo_name)
   end
 
@@ -51,9 +51,9 @@ class Sod
     puts "uploading Gemfile for chef"
     scp = Net::SCP.new connection
     scp.upload File.join(File.dirname(__FILE__), "chef_Gemfile"), "/chef/Gemfile"
-    puts bootstrap_ruby_gem_command! connection, "bundle install", :directory => "/chef"
+    puts bootstrap_ruby_gem_command! connection, "bundle install --gemfile=/chef/Gemfile"
   end
-  
+
   def self.bootstrap_ruby_command!(connection, string, options = {})
     command = "#{bootstrap_ruby_bin_path}/ruby #{bootstrap_ruby_bin_path}/#{string}"
     command = "cd #{options[:directory]} && " + command if options[:directory]
@@ -71,11 +71,11 @@ class Sod
   def self.bootstrap_ruby_bin_path
     "/usr/local/rvm/rubies/ruby-1.8.7-p302/bin"
   end
-  
+
   def self.bootstrap_ruby_gem_path
     "/usr/local/rvm/gems/ruby-1.8.7-p302/bin"
   end
-  
+
   def self.install_build_essential!(connection)
     puts "Installing git and c"
     puts connection.exec! 'rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm'
