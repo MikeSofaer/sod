@@ -52,6 +52,7 @@ class Sod
     scp = Net::SCP.new connection
     scp.upload File.join(File.dirname(__FILE__), "chef_Gemfile"), "/chef/Gemfile"
     puts bootstrap_ruby_gem_command! connection, "bundle install --gemfile=/chef/Gemfile"
+    puts bootstrap_ruby_gem_command! connection, "bundle install --gemfile=/chef/Gemfile" #I don't know why I have to do this.
   end
 
   def self.bootstrap_ruby_command!(connection, string, options = {})
