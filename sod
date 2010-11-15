@@ -16,7 +16,14 @@ class Sod
     install_rvm!(connection)
     clone_repo!(connection, repo_user, repo_name)
     chef_bootstrap!(connection, repo_name)
+    upload_secret_files(connection)
     app_bootstrap(connection, repo_name)
+  end
+
+  def self.upload_secret_files(connection)
+    scp = Net::SCP.new connection
+    dir = `echo ~/diaspora_cert`.strip + "/*"
+    Dir.glob(dir).each {|file| scp.upload! file, "/usr/local/nginx/conf/"}
   end
 
   def self.chef_bootstrap!(connection, repo_name)
