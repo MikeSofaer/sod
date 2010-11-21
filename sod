@@ -23,6 +23,7 @@ class Sod
   def self.upload_secret_files(connection)
     scp = Net::SCP.new connection
     dir = `echo ~/diaspora_cert`.strip + "/*"
+    connection.exec! "mkdir -p /usr/local/nginx/conf"
     Dir.glob(dir).each {|file| scp.upload! file, "/usr/local/nginx/conf/"}
   end
 
