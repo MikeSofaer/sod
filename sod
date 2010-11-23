@@ -89,6 +89,7 @@ class Sod
     puts "Installing git and c"
     puts connection.exec! 'rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm'
     puts connection.exec! "yum -y install git gcc automake autoconf libtool make"
+    puts connection.exec! "yum -y install readline readline-devel.x86_64 zlib zlib-devel.x86_64"
   end
 
   def self.clone_repo!(connection, repo_user, repo_name)
