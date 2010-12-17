@@ -12,8 +12,7 @@ class Sod
   end
 
   def self.bootstrap(connection, repo_user, repo_name)
-    install_build_essential!(connection)
-    install_curl_and_git!(connection)
+    install_build_essential! connection
     install_rvm!(connection)
     clone_repo!(connection, repo_user, repo_name)
     chef_bootstrap!(connection, repo_name)
@@ -89,17 +88,8 @@ class Sod
   def self.install_build_essential!(connection)
     puts "Installing git and c"
     puts connection.exec! 'rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm'
-    puts connection.exec! "yum -y install gcc automake autoconf libtool make"
+    puts connection.exec! "yum -y install git gcc automake autoconf libtool make"
     puts connection.exec! "yum -y install readline readline-devel.x86_64 zlib zlib-devel.x86_64"
-  end
-
-  def self.install_curl_and_git!(connection)
-    puts "Installing curl"
-    puts connection.exec! 'cd /usr/local/ && wget http://curl.haxx.se/download/curl-7.21.3.tar.gz'
-    puts connection.exec! 'tar -zxvf curl-7.21.3.tar.gz && cd curl-7.21.3.tar.gz && ./configure && make && make install'
-    puts "installing git"
-    puts connection.exec! 'cd /usr/local/ && wget http://kernel.org/pub/software/scm/git/git-1.7.3.4.tar.bz2'
-    puts connection.exec! 'tar -zxvf git-1.7.3.4.tar.bz2 && cd git-1.7.3.4.tar.bz2 && ./configure && make && make install'
   end
 
   def self.clone_repo!(connection, repo_user, repo_name)
