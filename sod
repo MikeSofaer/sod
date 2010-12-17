@@ -40,6 +40,16 @@ class Sod
     puts connection.exec! "cd /usr/local/app/#{repo_name} && chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/centos/main.json"
   end
 
+  def self.ruby_v
+    "ree-1.8.7-2010.02"
+    #"ruby-1.8.7-p302"
+  end
+
+  def self.install_ree_deps!(connection)
+    puts "Installing REE deps..."
+    puts connection.exec! "yum -y install gcc-c++ patch openssl-devel"
+  end
+
   def self.install_rvm!(connection)
     puts "installing rvm"
     scp = Net::SCP.new connection
@@ -48,7 +58,8 @@ class Sod
     puts connection.exec! "rvm package install zlib"
     puts connection.exec! "rvm package install openssl"
     puts connection.exec! "rvm package install readline"
-    puts connection.exec! "rvm install 1.8.7-p302 -C --with-zlib-dir=/usr/local/rvm/usr --with-readline-dir=/usr/local/rvm/usr --with-openssl-dir=/usr/local/rvm/usr"
+    install_ree_deps! connection
+    puts connection.exec! "rvm install #{ruby_v} -C --with-zlib-dir=/usr/local/rvm/usr --with-readline-dir=/usr/local/rvm/usr --with-openssl-dir=/usr/local/rvm/usr"
     puts 'setting /etc/bashrc'
     puts connection.exec! %{grep -q rvm /etc/bashrc || echo '[[ -s "/usr/local/lib/rvm" ]] && . "/usr/local/lib/rvm"' >> /etc/bashrc}
   end
@@ -78,11 +89,11 @@ class Sod
   end
 
   def self.bootstrap_ruby_bin_path
-    "/usr/local/rvm/rubies/ruby-1.8.7-p302/bin"
+    "/usr/local/rvm/rubies/#{ruby_v}/bin"
   end
 
   def self.bootstrap_ruby_gem_path
-    "/usr/local/rvm/gems/ruby-1.8.7-p302/bin"
+    "/usr/local/rvm/gems/#{ruby_v}/bin"
   end
 
   def self.install_build_essential!(connection)
