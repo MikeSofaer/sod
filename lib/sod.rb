@@ -1,9 +1,8 @@
-#! /usr/bin/env ruby
-
 require 'rubygems'
 require 'net/scp'
 require 'yaml'
-class Sod
+
+module Sod
   def self.provision(host)
     ssh_config = Net::SSH.configuration_for host
     config = YAML.load(File.read("../analyst_console/Sodfile"))["production"]
@@ -34,7 +33,8 @@ class Sod
     #"ree-1.8.7-2010.02"
     "ruby-1.8.7-p302"
   end
-
+end
+=begin
   def self.install_ree_deps!(connection)
     puts "Installing REE deps..."
     puts connection.exec! "yum -y install gcc-c++ patch openssl-devel"
@@ -53,7 +53,4 @@ class Sod
     connection.exec! "mkdir -p /usr/local/nginx/conf"
     Dir.glob(dir).each {|file| scp.upload! file, "/usr/local/nginx/conf/"}
   end
-end
-
-puts "need a host" unless ARGV[0]
-Sod.provision ARGV[0]
+=end

@@ -1,45 +1,14 @@
+PATH
+  remote: .
+  specs:
+    sod (0.0.1)
+
 GEM
   remote: http://rubygems.org/
   specs:
-    activesupport (3.0.1)
-    builder (2.1.2)
-    capistrano (2.5.19)
-      highline
-      net-scp (>= 1.0.0)
-      net-sftp (>= 2.0.0)
-      net-ssh (>= 2.0.14)
-      net-ssh-gateway (>= 1.0.0)
-    excon (0.2.4)
-    fog (0.3.13)
-      builder
-      excon (>= 0.2.4)
-      formatador (>= 0.0.15)
-      json
-      mime-types
-      net-ssh (~> 2.0.23)
-      nokogiri (~> 1.4.3.1)
-      ruby-hmac
-    formatador (0.0.15)
-    highline (1.6.1)
-    json (1.4.6)
-    mime-types (1.16)
-    net-scp (1.0.4)
-      net-ssh (>= 1.99.1)
-    net-sftp (2.0.5)
-      net-ssh (>= 2.0.9)
-    net-ssh (2.0.23)
-    net-ssh-gateway (1.0.1)
-      net-ssh (>= 1.99.1)
-    nokogiri (1.4.3.1)
-    ruby-hmac (0.4.0)
-    sprinkle (0.3.1)
-      activesupport (>= 2.0.2)
-      capistrano (>= 2.5.5)
-      highline (>= 1.4.0)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  fog
-  sprinkle
+  sod!

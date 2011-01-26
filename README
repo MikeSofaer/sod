@@ -1,6 +1,17 @@
-Sod bootstraps a centos machine using a github repo that uses bundler.
+Sod bootstraps a debian machine using a github repo that uses bundler.
 
-You need two cookbooks, bootstrap and main.  Bootstrap should contain only what needs to happen before bundle install.
-After bundle install the main cookbook will be run with bundle exec.  This one should set up everything else.
+You need one cookbook, with a bootstrap.rb and a default.rb
 
-Both cookbooks need a default recipe
+Bootstrap should contain only what needs to happen before bundle install.
+After bundle install the default recipe will be run.  This one should set up everything else.
+
+You configure all this with a Sodfile that looks like this:
+
+production:
+  key_location: chef/id_rsa
+  ssh_config_location: chef/config
+  user: root
+  repo: git@github.com:mikesofaer/sod.git
+  app_dir: /usr/local/app
+  cookbook: sod
+  test_suite_recipe: test_suite
