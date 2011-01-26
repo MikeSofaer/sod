@@ -2,98 +2,42 @@
 
 require 'rubygems'
 require 'net/scp'
+require 'yaml'
 class Sod
-  def self.provision(ip_address, repo_user, repo_name, password=nil)
-    unless password
-      puts "need password"
-      password = $stdin.gets
+  def self.provision(host)
+    ssh_config = Net::SSH.configuration_for host
+    config = YAML.load(File.read("../analyst_console/Sodfile"))["production"]
+    Net::SSH.start(ssh_config[:hostname], ssh_config[:user], ssh_config) do |connection|
+      bootstrap(connection, config)
     end
-    Net::SSH.start(ip_address, "root", :password => password.strip) { |connection| bootstrap(connection, repo_user, repo_name) }
   end
 
-  def self.bootstrap(connection, repo_user, repo_name)
-    install_build_essential! connection
-    install_rvm!(connection)
-    clone_repo!(connection, repo_user, repo_name)
-    chef_bootstrap!(connection, repo_name)
-    upload_secret_files(connection)
-    app_bootstrap(connection, repo_name)
-  end
-
-  def self.upload_secret_files(connection)
+  def self.bootstrap(connection, config)
     scp = Net::SCP.new connection
-    dir = `echo ~/diaspora_cert`.strip + "/*"
-    connection.exec! "mkdir -p /usr/local/nginx/conf"
-    Dir.glob(dir).each {|file| scp.upload! file, "/usr/local/nginx/conf/"}
-  end
+    puts connection.exec! "sudo mkdir -p /etc/sod/cookbooks/sod/recipes"
+    command = "sudo chown -R `whoami`:`whoami` /etc/sod"
+    puts connection.exec! command
+    scp.upload! File.join(File.dirname(__FILE__), "rvm_install.sh"), "/etc/sod"
+    scp.upload! File.join(File.dirname(__FILE__), "bootstrap.sh"), "/etc/sod"
+    scp.upload! File.join(".", "/Sodfile"), "/etc/sod"
+    scp.upload! File.join(File.dirname(__FILE__), "default.rb"), "/etc/sod/cookbooks/sod/recipes"
+    scp.upload! File.join(File.dirname(__FILE__), "project_chef.rb"), "/etc/sod/cookbooks/sod/recipes"
+    scp.upload! File.join(".",config["key_location"]), "/etc/sod"
+    puts connection.exec! "mkdir -p .ssh"
+    scp.upload! File.join(".",config["ssh_config_location"]), "./.ssh"
 
-  def self.chef_bootstrap!(connection, repo_name)
-    puts connection.exec! "mkdir -p /etc/chef && echo 'cookbook_path \"usr/local/app/#{repo_name}/chef/cookbooks\"' > /etc/chef/solo.rb"
-    install_chef(connection)
-    puts bootstrap_ruby_gem_command! connection, "chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/centos/bootstrap.json"
-  end
-
-  def self.app_bootstrap(connection, repo_name)
-    #At this point we assume you have set up ruby in a way that works on the machine
-    #how you want it to work, and we can just use it.
-    puts connection.exec! "cd /usr/local/app/#{repo_name} && bundle install"
-    puts connection.exec! "cd /usr/local/app/#{repo_name} && chef-solo -j /usr/local/app/#{repo_name}/chef/cookbooks/centos/main.json"
+    command =  "sudo sh -c 'export RUBY_VERSION=#{ruby_v} && /etc/sod/bootstrap.sh'"
+    puts connection.exec! command
   end
 
   def self.ruby_v
-    "ree-1.8.7-2010.02"
-    #"ruby-1.8.7-p302"
+    #"ree-1.8.7-2010.02"
+    "ruby-1.8.7-p302"
   end
 
   def self.install_ree_deps!(connection)
     puts "Installing REE deps..."
     puts connection.exec! "yum -y install gcc-c++ patch openssl-devel"
-  end
-
-  def self.install_rvm!(connection)
-    puts "installing rvm"
-    scp = Net::SCP.new connection
-    scp.upload! File.join(File.dirname(__FILE__), "rvm_install.sh"), "/root/"
-    puts connection.exec! "bash /root/rvm_install.sh"
-    puts connection.exec! "rvm package install zlib"
-    puts connection.exec! "rvm package install openssl"
-    puts connection.exec! "rvm package install readline"
-    install_ree_deps! connection
-    puts connection.exec! "rvm install #{ruby_v} -C --with-zlib-dir=/usr/local/rvm/usr --with-readline-dir=/usr/local/rvm/usr --with-openssl-dir=/usr/local/rvm/usr"
-    puts 'setting /etc/bashrc'
-    puts connection.exec! %{grep -q rvm /etc/bashrc || echo '[[ -s "/usr/local/lib/rvm" ]] && . "/usr/local/lib/rvm"' >> /etc/bashrc}
-  end
-  def self.install_chef(connection)
-    puts "installing bundler"
-    puts bootstrap_ruby_command! connection, "gem install bundler"
-    puts connection.exec! "mkdir -p /chef"
-    puts "uploading Gemfile for chef"
-    scp = Net::SCP.new connection
-    scp.upload File.join(File.dirname(__FILE__), "chef_Gemfile"), "/chef/Gemfile"
-    puts bootstrap_ruby_gem_command! connection, "bundle install --gemfile=/chef/Gemfile"
-    puts bootstrap_ruby_gem_command! connection, "bundle install --gemfile=/chef/Gemfile" #I don't know why I have to do this.
-  end
-
-  def self.bootstrap_ruby_command!(connection, string, options = {})
-    command = "#{bootstrap_ruby_bin_path}/ruby #{bootstrap_ruby_bin_path}/#{string}"
-    command = "cd #{options[:directory]} && " + command if options[:directory]
-    puts "executing " + command
-    puts connection.exec! command
-  end
-
-  def self.bootstrap_ruby_gem_command!(connection, string, options = {})
-    command = "#{bootstrap_ruby_bin_path}/ruby #{bootstrap_ruby_gem_path}/#{string}"
-    command = "cd #{options[:directory]} && " + command if options[:directory]
-    puts "executing " + command
-    puts connection.exec! command
-  end
-
-  def self.bootstrap_ruby_bin_path
-    "/usr/local/rvm/rubies/#{ruby_v}/bin"
-  end
-
-  def self.bootstrap_ruby_gem_path
-    "/usr/local/rvm/gems/#{ruby_v}/bin"
   end
 
   def self.install_build_essential!(connection)
@@ -103,13 +47,13 @@ class Sod
     puts connection.exec! "yum -y install readline readline-devel.x86_64 zlib zlib-devel.x86_64"
   end
 
-  def self.clone_repo!(connection, repo_user, repo_name)
-    root_repo_path = '/usr/local/app/'
-    puts connection.exec! "mkdir -p #{root_repo_path}"
-    puts connection.exec! "cd #{root_repo_path} && git clone git://github.com/#{repo_user}/#{repo_name}.git || true"
-    puts connection.exec! "cd #{root_repo_path}/#{repo_name} && git pull origin master"
+  def self.upload_secret_files(connection)
+    scp = Net::SCP.new connection
+    dir = `echo ~/diaspora_cert`.strip + "/*"
+    connection.exec! "mkdir -p /usr/local/nginx/conf"
+    Dir.glob(dir).each {|file| scp.upload! file, "/usr/local/nginx/conf/"}
   end
 end
 
-puts "need an ip address, github user, and repo name" unless ARGV[2]
-Sod.provision ARGV[0], ARGV[1], ARGV[2], ARGV[3]
+puts "need a host" unless ARGV[0]
+Sod.provision ARGV[0]
