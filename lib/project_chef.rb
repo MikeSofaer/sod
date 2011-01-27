@@ -4,7 +4,7 @@ $APP_PATH = File.join(config["app_dir"],repo_name)
 
 execute "prepend ruby executables to the path" do
   command "echo 'export PATH=/usr/local/rvm/rubies/#{config["ruby_version"]}/bin:/usr/local/rvm/gems/#{config["ruby_version"]}/bin:$PATH' >> /etc/profile"
-  not_if {`echo $PATH`.split(":").select{|s| s.match /rubies/}.first == "/usr/local/rvm/rubies/#{config["ruby_version"]}/bin"}
+  not_if {`cat /etc/profile`.split("\n").last.split(":").select{|s| s.match /rubies/}.first == "/usr/local/rvm/rubies/#{config["ruby_version"]}/bin"}
 end
 
 include_recipe (config["cookbook"] + "::bootstrap")
