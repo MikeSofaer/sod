@@ -25,13 +25,8 @@ module Sod
     puts connection.exec! "mkdir -p .ssh"
     scp.upload! File.join(".",config["ssh_config_location"]), "./.ssh"
 
-    command =  "sudo sh -c 'export RUBY_VERSION=#{ruby_v} && /etc/sod/bootstrap.sh'"
+    command =  "sudo sh -c 'export RUBY_VERSION=#{config["ruby_version"]} && /etc/sod/bootstrap.sh'"
     puts connection.exec! command
-  end
-
-  def self.ruby_v
-    #"ree-1.8.7-2010.02"
-    "ruby-1.8.7-p302"
   end
 end
 =begin
