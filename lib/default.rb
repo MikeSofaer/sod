@@ -13,9 +13,12 @@ directory config["app_dir"] do
   action :create
 end
 
+execute "blow away current repo" do
+  command "rm -rf #{$APP_PATH} || true"
+end
+
 execute "clone repo" do
   command "cd #{config["app_dir"]} && git clone #{config["repo"]}"
-  not_if "ls #{$APP_PATH}"
   user config["user"]
 end
 
