@@ -2,9 +2,12 @@ config = YAML.load(File.read('/etc/sod/Sodfile'))["production"]
 repo_name = config["repo"].split("/").last.gsub(".git","")
 $APP_PATH = File.join(config["app_dir"],repo_name)
 
-execute "prepend ruby executables to the path" do
-  command "echo 'export PATH=/usr/local/rvm/rubies/#{config["ruby_version"]}/bin:/usr/local/rvm/gems/#{config["ruby_version"]}/bin:$PATH' >> /etc/profile"
-  not_if {`cat /etc/profile`.split("\n").last.split(":").select{|s| s.match /rubies/}.first == "/usr/local/rvm/rubies/#{config["ruby_version"]}/bin"}
+execute "set environment script" do
+  command "echo 'export PATH=/usr/local/rvm/rubies/#{config["ruby_version"]}/bin:/usr/local/rvm/gems/#{config["ruby_version"]}/bin:$PATH' > /etc/sod/environment"
+end
+execute "set environment in all shells" do
+  command "echo 'source /etc/sod/environment' >> /etc/profile"
+  not_if {`tail -n 1 /etc/profile` == "source /etc/sod/environment"}
 end
 
 include_recipe (config["cookbook"] + "::bootstrap")
