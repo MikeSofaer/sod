@@ -1,9 +1,10 @@
-Sod bootstraps a debian machine using a github repo that uses bundler.
+Sod bootstraps a debian machine from a git repo of a project that uses chef bundler.
 
-You need one cookbook, with a bootstrap.rb and a default.rb
+You need one cookbook, with two recipes: a bootstrap.rb and a default.rb
 
-Bootstrap should contain only what needs to happen before bundle install.
-After bundle install the default recipe will be run.  This one should set up everything else.
+Your bootstrap.rb should contain only what needs to happen before bundle install.
+
+Sod will bundle install, then run your default recipe.  This one should set up everything else.
 
 You configure all this with a Sodfile that looks like this:
 
@@ -15,3 +16,22 @@ production:
   app_dir: /usr/local/app
   cookbook: sod
   test_suite_recipe: test_suite
+  ruby_version: ruby-1.8.7-p330
+  
+
+The key_location is a relative path in your repo to a key that can check out that repo.  It will go into /etc/sod
+The ssh_config_location is a relative path in your repo to a .ssh/config file that handles the connection to your git server.
+
+So if key_location and ssh_config_location are as above, chef/config should look like this:
+
+Host github.com
+Hostname github.com
+User git
+Port 22
+IdentityFile /etc/sod/id_rsa
+StrictHostKeyChecking no
+
+*USAGE*
+Set up your local ssh/config so you can ssh to the host with no prompt, then
+bundle exec sod host
+

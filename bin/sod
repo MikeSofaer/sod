@@ -2,5 +2,5 @@
 
 require "sod"
 
-puts "need a host" unless ARGV[0]
+raise "need a host" unless ARGV[0]
 Sod.provision ARGV[0]
