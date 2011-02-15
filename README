@@ -35,3 +35,6 @@ StrictHostKeyChecking no
 Set up your local ssh/config so you can ssh to the host with no prompt, then
 bundle exec sod host
 
+
+#Thanks
+Thanks to Affine Systems for sponsoring some of the development of this tool.
