@@ -1,18 +1,14 @@
 #! /bin/bash
-# Install build essential
 set -ex
-apt-get -y install curl
-apt-get -y install git-core
+# RVM dependencies
+/usr/bin/aptitude install build-essential bison openssl libreadline6 libreadline6-dev curl git-core zlib1g zlib1g-dev libssl-dev libxml2-dev libxslt-dev autoconf libc6-dev -y
 
 /etc/sod/rvm_install.sh
-rvm package install zlib
-rvm package install openssl
-rvm package install readline
-rvm install $RUBY_VERSION #-C --with-zlib-dir=/usr/local/rvm/usr --with-readline-dir=/usr/local/rvm/usr --with-openssl-dir=/usr/local/rvm/usr
+rvm install $RUBY_VERSION
 
 export PATH=/usr/local/rvm/rubies/$RUBY_VERSION/bin:/usr/local/rvm/gems/$RUBY_VERSION/bin:$PATH
 
-gem install chef
+gem install chef --no-rdoc --no-ri
 echo 'cookbook_path "/etc/sod/cookbooks"' > /etc/sod/solo.rb
 
 echo '{"recipes": ["sod::default"]}' > /etc/sod/cookbooks/sod/sod.json

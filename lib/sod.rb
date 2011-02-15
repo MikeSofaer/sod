@@ -23,7 +23,9 @@ module Sod
     scp.upload! File.join(File.dirname(__FILE__), "project_chef.rb"), "/etc/sod/cookbooks/sod/recipes"
     scp.upload! File.join(".",config["key_location"]), "/etc/sod"
     puts connection.exec! "mkdir -p .ssh"
-    scp.upload! File.join(".",config["ssh_config_location"]), "./.ssh"
+    scp.upload! File.join(".",config["ssh_config_location"]), "."
+    connection.exec! "sudo mv ./config #{config["remote_ssh_config_location"]}"
+    connection.exec! "sudo chown root:root #{config["remote_ssh_config_location"]}/config"
 
     command =  "sudo sh -c 'export RUBY_VERSION=#{config["ruby_version"]} && /etc/sod/bootstrap.sh'"
     puts connection.exec! command
