@@ -22,6 +22,7 @@ module Sod
     scp.upload! File.join(File.dirname(__FILE__), "bootstrap.sh"), "/etc/sod"
     scp.upload! File.join(".", "/Sodfile"), "/etc/sod"
     scp.upload! File.join(File.dirname(__FILE__), "default.rb"), "/etc/sod/cookbooks/sod/recipes"
+    scp.upload! File.join(File.dirname(__FILE__), "bootstrap.rb"), "/etc/sod/cookbooks/sod/recipes"
     scp.upload! File.join(File.dirname(__FILE__), "project_chef.rb"), "/etc/sod/cookbooks/sod/recipes"
     scp.upload! File.join(".",config["key_location"]), "/etc/sod"
     scp.upload! File.join(".",config["ssh_config_location"]), "/etc/sod"
