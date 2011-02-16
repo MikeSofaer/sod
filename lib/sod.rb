@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'net/scp'
 require 'yaml'
+require 'ap'
 
 module Sod
   def self.provision(host)
@@ -14,6 +15,7 @@ module Sod
   def self.bootstrap(connection, config)
     scp = Net::SCP.new connection
     puts connection.exec! "sudo mkdir -p /etc/sod/cookbooks/sod/recipes"
+    puts connection.exec! "sudo chown -R #{config[:user]}:#{config[:user]} /etc/sod/cookbooks/sod/recipes"
     command = "sudo chown -R `whoami`:`whoami` /etc/sod"
     puts connection.exec! command
     scp.upload! File.join(File.dirname(__FILE__), "rvm_install.sh"), "/etc/sod"
@@ -22,10 +24,10 @@ module Sod
     scp.upload! File.join(File.dirname(__FILE__), "default.rb"), "/etc/sod/cookbooks/sod/recipes"
     scp.upload! File.join(File.dirname(__FILE__), "project_chef.rb"), "/etc/sod/cookbooks/sod/recipes"
     scp.upload! File.join(".",config["key_location"]), "/etc/sod"
-    puts connection.exec! "mkdir -p .ssh"
-    scp.upload! File.join(".",config["ssh_config_location"]), "."
-    connection.exec! "sudo mv ./config #{config["remote_ssh_config_location"]}"
-    connection.exec! "sudo chown root:root #{config["remote_ssh_config_location"]}/config"
+    scp.upload! File.join(".",config["ssh_config_location"]), "/etc/sod"
+    puts connection.exec! "sudo mkdir -p #{config["remote_ssh_config_location"]}"
+    connection.exec! "sudo mv /etc/sod/config #{config["remote_ssh_config_location"]}/config"
+    connection.exec! "sudo chown -R root:root #{config["remote_ssh_config_location"]}"
 
     command =  "sudo sh -c 'export RUBY_VERSION=#{config["ruby_version"]} && /etc/sod/bootstrap.sh'"
     puts connection.exec! command
