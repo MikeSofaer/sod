@@ -6,7 +6,7 @@ require 'ap'
 module Sod
   def self.provision(host)
     ssh_config = Net::SSH.configuration_for host
-    config = YAML.load(File.read("../analyst_console/Sodfile"))["production"]
+    config = YAML.load(File.read("./Sodfile"))["production"]
     Net::SSH.start(ssh_config[:hostname], ssh_config[:user], ssh_config) do |connection|
       bootstrap(connection, config)
     end
