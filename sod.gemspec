@@ -13,6 +13,8 @@ Gem::Specification.new do |s|
   s.description = %q{sod is a gem for going from a blank OS to a fully deployed system.  It installs ruby and chef, and runs your chef scripts.}
 
   s.rubyforge_project = "sod"
+  s.add_dependency "net-scp"
+  s.add_development_dependency "awesome_print"
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")

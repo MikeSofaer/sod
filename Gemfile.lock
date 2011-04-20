@@ -2,13 +2,19 @@ PATH
   remote: .
   specs:
     sod (0.0.1)
+      net-scp
 
 GEM
   remote: http://rubygems.org/
   specs:
+    awesome_print (0.3.2)
+    net-scp (1.0.4)
+      net-ssh (>= 1.99.1)
+    net-ssh (2.0.24)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  awesome_print
   sod!
