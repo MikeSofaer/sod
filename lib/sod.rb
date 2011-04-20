@@ -1,7 +1,6 @@
 require 'rubygems'
 require 'net/scp'
 require 'yaml'
-require 'ap'
 
 module Sod
   def self.provision(host)
