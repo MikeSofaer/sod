@@ -13,6 +13,8 @@ rvm use $RUBY_VERSION
 gem install chef --no-rdoc --no-ri
 echo 'cookbook_path "/etc/sod/cookbooks"' > /etc/sod/solo.rb
 
+echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+
 echo '{"recipes": ["sod::default"]}' > /etc/sod/cookbooks/sod/sod.json
 chef-solo -c /etc/sod/solo.rb -j /etc/sod/cookbooks/sod/sod.json
 
