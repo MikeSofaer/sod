@@ -5,6 +5,7 @@ require 'yaml'
 module Sod
   def self.provision(host)
     ssh_config = Net::SSH.configuration_for host
+    puts "You need to put some happy in ~/.ssh/config for #{host}" or exit(1) unless ssh_config[:user] #SORRY
     config = YAML.load(File.read("./Sodfile"))["production"]
     Net::SSH.start(ssh_config[:hostname], ssh_config[:user], ssh_config) do |connection|
       bootstrap(connection, config)
@@ -13,23 +14,24 @@ module Sod
 
   def self.bootstrap(connection, config)
     scp = Net::SCP.new connection
-    puts connection.exec! "sudo mkdir -p /etc/sod/cookbooks/sod/recipes"
-    puts connection.exec! "sudo chown -R #{config[:user]}:#{config[:user]} /etc/sod/cookbooks/sod/recipes"
-    command = "sudo chown -R `whoami`:`whoami` /etc/sod"
-    puts connection.exec! command
+    puts connection.exec! "mkdir -p /etc/sod/cookbooks/sod/recipes"
+    puts connection.exec! "chown -R #{config[:user]}:#{config[:user]} /etc/sod/cookbooks/sod/recipes"
     scp.upload! File.join(File.dirname(__FILE__), "rvm_install.sh"), "/etc/sod"
     scp.upload! File.join(File.dirname(__FILE__), "bootstrap.sh"), "/etc/sod"
     scp.upload! File.join(".", "/Sodfile"), "/etc/sod"
+    puts connection.exec! "mkdir -p /etc/sod/cookbooks/sod/recipes"
     scp.upload! File.join(File.dirname(__FILE__), "default.rb"), "/etc/sod/cookbooks/sod/recipes"
     scp.upload! File.join(File.dirname(__FILE__), "bootstrap.rb"), "/etc/sod/cookbooks/sod/recipes"
     scp.upload! File.join(File.dirname(__FILE__), "project_chef.rb"), "/etc/sod/cookbooks/sod/recipes"
-    scp.upload! File.join(".",config["key_location"]), "/etc/sod"
-    scp.upload! File.join(".",config["ssh_config_location"]), "/etc/sod"
-    puts connection.exec! "sudo mkdir -p #{config["remote_ssh_config_location"]}"
-    connection.exec! "sudo mv /etc/sod/config #{config["remote_ssh_config_location"]}/config"
-    connection.exec! "sudo chown -R root:root #{config["remote_ssh_config_location"]}"
-
-    command =  "sudo sh -c 'export RUBY_VERSION=#{config["ruby_version"]} && /etc/sod/bootstrap.sh'"
+    scp.upload! File.join(".",config["key_location"]), "/etc/sod" if config["key_location"]
+    scp.upload! File.join(".",config["ssh_config_location"]), "/etc/sod" if config["ssh_config_location"]
+    if config["remote_ssh_config_location"]
+      puts connection.exec! "mkdir -p #{config["remote_ssh_config_location"]}"
+      connection.exec! "mv /etc/sod/config #{config["remote_ssh_config_location"]}/config"
+      connection.exec! "chown -R root:root #{config["remote_ssh_config_location"]}"
+    end
+    command =  "sh -c 'export RUBY_VERSION=#{config["ruby_version"]} && /etc/sod/bootstrap.sh'"
+    puts command
     puts connection.exec! command
   end
 end
